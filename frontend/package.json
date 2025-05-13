@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mui/icons-material": "^5.15.12",
+    "@mui/material": "^5.15.12",
+    "date-fns": "^3.3.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
