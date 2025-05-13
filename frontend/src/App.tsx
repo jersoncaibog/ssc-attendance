@@ -1,6 +1,7 @@
 import HowToRegIcon from "@mui/icons-material/HowToReg";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SaveAltIcon from "@mui/icons-material/SaveAlt";
+import { Analytics } from "@vercel/analytics/react";
 import { useEffect, useState } from "react";
 import "./App.css";
 import { Button } from "./components/common/Button/Button";
@@ -235,6 +236,7 @@ function App() {
 
   return (
     <div className="app bg-background-light h-[100vh] pb-5">
+      <Analytics />
       {/* Header */}
       <div className="w-full h-fit flex flex-col p-5 border-b border-border-dark bg-white gap-5 mb-6">
         {/* Top part */}
