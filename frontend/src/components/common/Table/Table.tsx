@@ -25,7 +25,7 @@ interface StudentRecord {
   section: string;
 }
 
-type TableRecord = AttendanceRecord | StudentRecord;
+export type TableRecord = AttendanceRecord | StudentRecord;
 
 interface TableProps {
   columns: Column[];
@@ -45,7 +45,15 @@ export const Table = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      // Check if the click is on a menu button or its child
+      const target = event.target as HTMLElement;
+      const isMenuButton = target.closest("button");
+
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        !isMenuButton
+      ) {
         setActiveMenu(null);
       }
     };
@@ -57,13 +65,13 @@ export const Table = ({
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "present":
-        return "bg-green-100 text-green-700";
+        return "text-green-600";
       case "absent":
-        return "bg-gray-100 text-gray-700";
+        return "text-gray-500";
       case "excused":
-        return "bg-orange-100 text-orange-700";
+        return "text-orange-600";
       default:
-        return "bg-gray-100 text-gray-700";
+        return "text-gray-700";
     }
   };
 
@@ -88,9 +96,8 @@ export const Table = ({
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`px-4 py-3 text-left text-xs font-semibold text-gray-600 ${
-                  column.width ? `w-${column.width}` : ""
-                }`}
+                className={`px-4 py-3 text-left text-xs font-semibold text-gray-600`}
+                style={{ width: column.width ? `${column.width}rem` : "auto" }}
               >
                 {column.label}
               </th>
@@ -102,16 +109,16 @@ export const Table = ({
           {data.map((row, rowIndex) => (
             <tr
               key={rowIndex}
-              className="border-b border-border-dark hover:bg-gray-50"
+              className="border-b border-border-dark hover:bg-gray-50 "
             >
               {columns.map((column) => (
                 <td
                   key={`${rowIndex}-${column.key}`}
-                  className="px-4 py-3 text-sm text-gray-700"
+                  className="px-4 text-gray-700 text-xs"
                 >
                   {column.key === "status" && isAttendanceRecord(row) ? (
                     <span
-                      className={`px-2 py-1 rounded-md text-xs font-medium ${getStatusColor(
+                      className={`px-2 py-1 rounded-md font-medium ${getStatusColor(
                         row.status
                       )}`}
                     >
@@ -122,12 +129,12 @@ export const Table = ({
                   )}
                 </td>
               ))}
-              <td className="px-2 py-3">
+              <td className="px-3 py-1.5">
                 <div className="relative" ref={menuRef}>
                   <button
-                    onClick={() =>
-                      setActiveMenu(activeMenu === rowIndex ? null : rowIndex)
-                    }
+                    onClick={() => {
+                      setActiveMenu(activeMenu === rowIndex ? null : rowIndex);
+                    }}
                     className="p-1 hover:bg-gray-100 rounded-md transition-colors"
                   >
                     <MoreVertIcon fontSize="small" className="text-gray-600" />
@@ -137,34 +144,34 @@ export const Table = ({
                       {isAttendanceRecord(row) ? (
                         <>
                           <button
-                            onClick={() =>
+                            onClick={() => {
                               handleActionClick("status", {
                                 ...row,
                                 status: "Present",
-                              })
-                            }
+                              });
+                            }}
                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
                             Present
                           </button>
                           <button
-                            onClick={() =>
+                            onClick={() => {
                               handleActionClick("status", {
                                 ...row,
                                 status: "Absent",
-                              })
-                            }
+                              });
+                            }}
                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
                             Absent
                           </button>
                           <button
-                            onClick={() =>
+                            onClick={() => {
                               handleActionClick("status", {
                                 ...row,
                                 status: "Excused",
-                              })
-                            }
+                              });
+                            }}
                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
                             Excused
@@ -173,7 +180,9 @@ export const Table = ({
                       ) : (
                         <>
                           <button
-                            onClick={() => handleActionClick("metrics", row)}
+                            onClick={() => {
+                              handleActionClick("metrics", row);
+                            }}
                             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
                             Metrics

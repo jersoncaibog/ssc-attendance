@@ -42,7 +42,7 @@ export const TableSelector = ({ value, onChange }: TableSelectorProps) => {
         className="flex flex-row items-center cursor-pointer"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className="font-semibold text-header">
+        <span className="font-medium text-header text-sm">
           {selectedOption?.label}
         </span>
         <ArrowDropDownIcon />

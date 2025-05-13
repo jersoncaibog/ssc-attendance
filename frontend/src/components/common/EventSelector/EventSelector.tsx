@@ -54,15 +54,15 @@ export const EventSelector = ({
   return (
     <div className="relative" ref={eventSelectorRef}>
       <div
-        className={`${className} w-40 flex flex-row items-center border border-border-dark px-3 py-1 gap-2 rounded-md focus-within:border-border-focus cursor-pointer`}
+        className={`${className} w-40 flex flex-row items-center border border-border-dark px-3 py-1.5 gap-2 rounded-md focus-within:border-border-focus focus-within:ring-2 focus-within:ring-zinc-200 cursor-pointer text-xs`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="text-textbox-placeholder">
-          <EventIcon fontSize="small" />
+          <EventIcon sx={{ fontSize: "1rem" }} />
         </span>
         <input
           type="text"
-          className="w-full outline-none text-sm cursor-pointer"
+          className="w-full outline-none text-xs cursor-pointer bg-transparent"
           placeholder={placeholder}
           value={
             selectedEvent ? `${selectedEvent.name} (${selectedEvent.time})` : ""
@@ -78,7 +78,7 @@ export const EventSelector = ({
               <button
                 key={event.id}
                 onClick={() => handleEventSelect(event)}
-                className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded-md text-sm"
+                className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded-md text-xs"
               >
                 <div className="font-medium">{event.name}</div>
                 <div className="text-gray-500 text-xs">{event.time}</div>
@@ -87,7 +87,7 @@ export const EventSelector = ({
           </div>
           <div className="border-t border-border-dark mt-2 pt-2">
             <button
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs text-blue-600 hover:bg-blue-50 rounded-md"
               onClick={() => {
                 // Handle add event click
                 console.log("Add event clicked");

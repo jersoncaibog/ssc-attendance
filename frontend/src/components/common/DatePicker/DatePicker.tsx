@@ -56,15 +56,15 @@ export const DatePicker = ({
   return (
     <div className="relative" ref={datePickerRef}>
       <div
-        className={`${className} w-40 flex flex-row items-center border border-border-dark px-3 py-1 gap-2 rounded-md focus-within:border-border-focus cursor-pointer`}
+        className={`${className} w-40 flex flex-row items-center border border-border-dark px-3 py-1.5 gap-2 rounded-md focus-within:border-border-focus focus-within:ring-2 focus-within:ring-zinc-200 cursor-pointer text-xs`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="text-textbox-placeholder">
-          <CalendarMonthIcon fontSize="small" />
+          <CalendarMonthIcon sx={{ fontSize: "1rem" }} />
         </span>
         <input
           type="text"
-          className="w-full outline-none text-sm cursor-pointer"
+          className="w-full outline-none text-xs cursor-pointer bg-transparent"
           placeholder={placeholder}
           value={selectedDate ? format(selectedDate, "MMM dd, yyyy") : ""}
           readOnly
@@ -87,7 +87,7 @@ export const DatePicker = ({
             >
               ←
             </button>
-            <span className="text-sm font-medium">
+            <span className="text-xs font-medium">
               {format(currentMonth, "MMMM yyyy")}
             </span>
             <button
@@ -117,7 +117,7 @@ export const DatePicker = ({
                 key={day.toISOString()}
                 onClick={() => handleDateClick(day)}
                 className={`
-                  text-sm p-1 rounded hover:bg-gray-100
+                  text-xs p-1 rounded hover:bg-gray-100
                   ${!isSameMonth(day, currentMonth) ? "text-gray-300" : ""}
                   ${isToday(day) ? "bg-blue-50 text-blue-600" : ""}
                   ${
