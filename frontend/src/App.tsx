@@ -319,7 +319,7 @@ function App() {
         <div className="p-6 text-center">
           <h2 className="font-light text-xl">Ready to Scan</h2>
           <img
-            src="/public/rfid-scan.jpg"
+            src="/rfid-scan.jpg"
             alt="RFID Scanner"
             className="w-32 mx-auto mt-2"
           />
