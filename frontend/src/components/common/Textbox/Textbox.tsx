@@ -5,7 +5,8 @@ interface TextboxProps {
   placeholder?: string;
   icon?: React.ReactNode;
   name?: string;
-  defaultValue?: string;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const Textbox = ({
@@ -13,7 +14,8 @@ export const Textbox = ({
   icon,
   placeholder,
   name,
-  defaultValue,
+  value,
+  onChange,
 }: TextboxProps) => {
   return (
     <div
@@ -23,7 +25,8 @@ export const Textbox = ({
       <input
         type="text"
         name={name}
-        defaultValue={defaultValue}
+        value={value}
+        onChange={onChange}
         className="w-full outline-none text-xs bg-transparent"
         placeholder={placeholder}
       />

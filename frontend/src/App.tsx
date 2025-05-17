@@ -33,6 +33,7 @@ interface StudentRecord {
   course: string;
   year: string;
   section: string;
+  rfid?: string;
 }
 
 function App() {
@@ -85,6 +86,7 @@ function App() {
       course: "BSIT",
       year: "2",
       section: "A",
+      rfid: "RFID001",
     },
     {
       studentId: "23-0002",
@@ -92,6 +94,7 @@ function App() {
       course: "BSHM",
       year: "1",
       section: "B",
+      rfid: "RFID002",
     },
     {
       studentId: "23-0003",
@@ -99,6 +102,7 @@ function App() {
       course: "BSCrim",
       year: "3",
       section: "C",
+      rfid: "RFID003",
     },
   ]);
 

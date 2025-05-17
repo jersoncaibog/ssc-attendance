@@ -26,8 +26,12 @@ export const DropdownSelector = ({
   name,
 }: DropdownSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedValue, setSelectedValue] = useState<string | undefined>(value);
+  const [internalValue, setInternalValue] = useState<string | undefined>(value);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setInternalValue(value);
+  }, [value]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -43,17 +47,17 @@ export const DropdownSelector = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSelect = (value: string) => {
-    setSelectedValue(value);
-    onChange?.(value);
+  const handleSelect = (newValue: string) => {
+    setInternalValue(newValue);
+    onChange?.(newValue);
     setIsOpen(false);
   };
 
-  const selectedOption = options.find((opt) => opt.value === selectedValue);
+  const selectedOption = options.find((opt) => opt.value === internalValue);
 
   return (
     <div className="relative text-xs h-fit" ref={dropdownRef}>
-      {name && <input type="hidden" name={name} value={selectedValue || ""} />}
+      {name && <input type="hidden" name={name} value={internalValue || ""} />}
       <div
         className={`w-32 flex flex-row h-fit items-center border border-border-dark px-3 py-1 gap-2 rounded-md focus-within:border-border-focus focus-within:ring-2 focus-within:ring-zinc-200 cursor-pointer text-xs ${className}`}
         onClick={() => setIsOpen(!isOpen)}
@@ -77,7 +81,7 @@ export const DropdownSelector = ({
                 key={option.value}
                 onClick={() => handleSelect(option.value)}
                 className={`w-full text-left px-3 py-2 hover:bg-gray-100 rounded-md text-xs ${
-                  selectedValue === option.value ? "bg-gray-100" : ""
+                  internalValue === option.value ? "bg-gray-100" : ""
                 }`}
               >
                 {option.label}

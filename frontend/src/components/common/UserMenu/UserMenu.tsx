@@ -1,6 +1,6 @@
 import HelpIcon from "@mui/icons-material/Help";
 import KeyIcon from "@mui/icons-material/Key";
-import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
+import PersonIcon from '@mui/icons-material/Person';
 import { useEffect, useRef, useState } from "react";
 
 interface UserMenuProps {
@@ -25,10 +25,10 @@ export const UserMenu = ({ onLogout }: UserMenuProps) => {
   return (
     <div className="relative" ref={menuRef}>
       <div
-        className="grid place-items-center border border-border-dark rounded-md p-0.5 cursor-pointer hover:bg-gray-50 text-gray-500 hover:text-gray-600 transition-colors hover:border-gray-600 focus:ring-2 focus:ring-zinc-200"
+        className="grid place-items-center border border-border-dark rounded-md p-[0.225rem] cursor-pointer hover:bg-gray-50 text-gray-500 hover:text-gray-600 transition-colors hover:border-gray-600 focus:ring-2 focus:ring-zinc-200"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <PersonOutlineOutlinedIcon />
+        <PersonIcon sx={{ fontSize: "1.3rem" }} />
       </div>
 
       {isOpen && (
