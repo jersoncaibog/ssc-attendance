@@ -74,14 +74,14 @@ export const DropdownSelector = ({
       </div>
 
       {isOpen && (
-        <div className="absolute top-full mt-1 bg-white border border-border-dark rounded-md shadow-lg p-2 z-10 w-full text-xs">
+        <div className="absolute top-full mt-1 bg-white border border-border-dark rounded-md shadow-lg py-2 z-10 w-full text-xs">
           <div className="max-h-48 overflow-y-auto">
             {options.map((option) => (
               <button
                 key={option.value}
                 onClick={() => handleSelect(option.value)}
-                className={`w-full text-left px-3 py-2 hover:bg-gray-100 rounded-md text-xs ${
-                  internalValue === option.value ? "bg-gray-100" : ""
+                className={`w-full text-left px-3 py-2 hover:bg-zinc-100 text-xs ${
+                  internalValue === option.value ? "bg-zinc-100" : ""
                 }`}
               >
                 {option.label}

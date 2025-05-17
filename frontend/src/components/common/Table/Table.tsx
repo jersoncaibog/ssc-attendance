@@ -80,9 +80,7 @@ export const Table = ({
     setActiveMenu(null);
   };
 
-  const isAttendanceRecord = (
-    record: TableRecord
-  ): record is AttendanceRecord => {
+  const isAttendanceRecord = (record: TableRecord): record is AttendanceRecord => {
     return "status" in record;
   };
 
@@ -150,7 +148,7 @@ export const Table = ({
                                 status: "Present",
                               });
                             }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                           >
                             Present
                           </button>
@@ -161,7 +159,7 @@ export const Table = ({
                                 status: "Absent",
                               });
                             }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                           >
                             Absent
                           </button>
@@ -172,7 +170,7 @@ export const Table = ({
                                 status: "Excused",
                               });
                             }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                           >
                             Excused
                           </button>
@@ -183,19 +181,19 @@ export const Table = ({
                             onClick={() => {
                               handleActionClick("metrics", row);
                             }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                           >
                             Metrics
                           </button>
                           <button
                             onClick={() => handleActionClick("edit", row)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleActionClick("delete", row)}
-                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50"
                           >
                             Delete
                           </button>

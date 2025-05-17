@@ -54,7 +54,7 @@ export const TableSelector = ({ value, onChange }: TableSelectorProps) => {
             <button
               key={option.value}
               onClick={() => handleSelect(option.value)}
-              className={`w-full text-left px-6 py-2 hover:bg-gray-100 text-sm ${
+              className={`w-full text-left px-6 py-2 hover:bg-gray-100 text-xs font-medium ${
                 value === option.value ? "bg-gray-100" : ""
               }`}
             >

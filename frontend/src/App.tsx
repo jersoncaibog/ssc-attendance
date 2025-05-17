@@ -2,12 +2,17 @@ import HowToRegIcon from "@mui/icons-material/HowToReg";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SaveAltIcon from "@mui/icons-material/SaveAlt";
 import { Analytics } from "@vercel/analytics/react";
+import axios from "axios";
 import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
 import "./App.css";
 import { Button } from "./components/common/Button/Button";
 import { DatePicker } from "./components/common/DatePicker/DatePicker";
 import { DropdownSelector } from "./components/common/DropdownSelector/DropdownSelector";
-import { EventSelector } from "./components/common/EventSelector/EventSelector";
+import {
+  EventSelector,
+  type Event,
+} from "./components/common/EventSelector/EventSelector";
 import { Modal } from "./components/common/Modal/Modal";
 import { SearchBar } from "./components/common/SearchBar/SearchBar";
 import type { TableRecord } from "./components/common/Table/Table";
@@ -17,6 +22,8 @@ import { UserMenu } from "./components/common/UserMenu/UserMenu";
 import { AddStudentForm } from "./components/forms/AddStudentForm/AddStudentForm";
 import { EditStudentForm } from "./components/forms/EditStudentForm/EditStudentForm";
 import { Metrics } from "./components/ui/Metrics/Metrics";
+import config from "./config";
+import { ToastProvider, useToast } from "./contexts/ToastContext";
 
 interface AttendanceRecord {
   studentId: string;
@@ -36,113 +43,183 @@ interface StudentRecord {
   rfid?: string;
 }
 
-function App() {
+interface DBStudent {
+  id: number;
+  student_id: string;
+  name: string;
+  course: string;
+  year: string;
+  section: string;
+  rfid: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DBAttendance {
+  id: number;
+  student_id: string;
+  event_id: number;
+  status: string;
+  check_in_time: string;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  course: string;
+  year: string;
+  section: string;
+}
+
+interface DBEvent {
+  id: number;
+  title: string;
+  description: string;
+  event_date: string;
+  location: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface AttendanceUpdatePayload {
+  operation: "INSERT" | "UPDATE";
+  record: {
+    id: number;
+    student_id: string;
+    event_id: number;
+    status: string;
+    check_in_time: string;
+    created_at: string;
+    updated_at: string;
+  };
+}
+
+function AppContent() {
+  const { showToast } = useToast();
   const [selectedTable, setSelectedTable] = useState("attendance");
   const [isRfidModalOpen, setIsRfidModalOpen] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
   const [isMetricsModalOpen, setIsMetricsModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | undefined>(
+    undefined
+  );
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [editingStudent, setEditingStudent] = useState<
     AttendanceRecord | StudentRecord | null
   >(null);
   const [selectedStudentForMetrics, setSelectedStudentForMetrics] =
     useState<StudentRecord | null>(null);
+  const [events, setEvents] = useState<DBEvent[]>([]);
 
+  const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
+  const [students, setStudents] = useState<StudentRecord[]>([]);
+
+  // Fetch students from database
   useEffect(() => {
-    console.log(isEditStudentModalOpen);
-  }, [isEditStudentModalOpen]);
+    axios
+      .get(`${config.API_BASE_URL}/students`)
+      .then((res) => {
+        const mappedStudents = res.data.map((student: DBStudent) => ({
+          studentId: student.student_id,
+          name: student.name,
+          course: student.course.toUpperCase(),
+          year: student.year,
+          section: student.section.toUpperCase(),
+          rfid: student.rfid,
+        }));
+        setStudents(mappedStudents);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }, []);
 
-  const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([
-    {
-      studentId: "23-0001",
-      name: "John Doe",
-      course: "BSIT",
-      year: "2",
-      section: "A",
-      status: "Present",
-    },
-    {
-      studentId: "23-0002",
-      name: "Jinky Caibog",
-      course: "BSHM",
-      year: "1",
-      section: "B",
-      status: "Absent",
-    },
-    {
-      studentId: "23-0003",
-      name: "Mike Johnson",
-      course: "BSCrim",
-      year: "3",
-      section: "C",
-      status: "Excused",
-    },
-  ]);
+  // Fetch events from database
+  useEffect(() => {
+    const formattedDate = selectedDate.toLocaleDateString("en-CA"); // Format as YYYY-MM-DD
+    axios
+      .get(`${config.API_BASE_URL}/events/date/${formattedDate}`)
+      .then((res) => {
+        setEvents(res.data);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }, [selectedDate]);
 
-  const [students, setStudents] = useState<StudentRecord[]>([
-    {
-      studentId: "23-0001",
-      name: "John Doe",
-      course: "BSIT",
-      year: "2",
-      section: "A",
-      rfid: "RFID001",
-    },
-    {
-      studentId: "23-0002",
-      name: "Jinky Caibog",
-      course: "BSHM",
-      year: "1",
-      section: "B",
-      rfid: "RFID002",
-    },
-    {
-      studentId: "23-0003",
-      name: "Mike Johnson",
-      course: "BSCrim",
-      year: "3",
-      section: "C",
-      rfid: "RFID003",
-    },
-  ]);
+  // Fetch attendance data from database
+  useEffect(() => {
+    if (selectedEvent) {
+      axios
+        .get(`${config.API_BASE_URL}/attendance/event/${selectedEvent?.id}`)
+        .then((res) => {
+          console.log(res);
 
-  const courseOptions = [
-    { value: "all", label: "All Courses" },
-    { value: "bsit", label: "BSIT" },
-    { value: "bshm", label: "BSHM" },
-    { value: "bscrim", label: "BSCrim" },
-  ];
+          const mappedAttendance = res.data.map((record: DBAttendance) => ({
+            studentId: record.student_id,
+            name: record.name,
+            course: record.course.toUpperCase(),
+            year: record.year,
+            section: record.section.toUpperCase(),
+            status: record.status,
+          }));
 
-  const yearOptions = [
-    { value: "all", label: "All Years" },
-    { value: "1", label: "Year 1" },
-    { value: "2", label: "Year 2" },
-    { value: "3", label: "Year 3" },
-    { value: "4", label: "Year 4" },
-  ];
+          console.log(mappedAttendance);
+          setAttendanceData(mappedAttendance);
+        })
+        .catch((err) => {
+          console.error(err);
+        });
+    }
+  }, [selectedEvent]);
 
-  const sectionOptions = [
-    { value: "all", label: "All Sections" },
-    { value: "a", label: "Section A" },
-    { value: "b", label: "Section B" },
-    { value: "c", label: "Section C" },
-  ];
+  // Setup Socket.IO connection for real-time attendance updates
+  useEffect(() => {
+    const socket = io(config.SOCKET_URL, {
+      transports: ["websocket", "polling"],
+      path: "/socket.io",
+    });
 
-  const handleSearch = (value: string) => {
-    console.log("Searching for:", value);
-  };
+    socket.on("connect", () => {
+      console.log("Connected to Socket.IO server");
+    });
 
-  const handleLogout = () => {
-    console.log("Logging out...");
-  };
+    socket.on("connect_error", (error) => {
+      console.error("Socket.IO connection error:", error);
+    });
 
-  const handleDownload = () => {
-    console.log("Exporting data...");
-  };
+    socket.on("attendanceUpdate", (payload: AttendanceUpdatePayload) => {
+      console.log("Received attendance update:", payload);
+
+      if (
+        selectedEvent &&
+        payload.record.event_id === parseInt(selectedEvent.id)
+      ) {
+        // Update attendance data if it matches the current event
+        setAttendanceData((prevData) => {
+          const newData = [...prevData];
+          const index = newData.findIndex(
+            (item) => item.studentId === payload.record.student_id
+          );
+
+          if (index !== -1) {
+            newData[index] = {
+              ...newData[index],
+              status: payload.record.status,
+            };
+          }
+
+          return newData;
+        });
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [selectedEvent]);
 
   const handleTableAction = (action: string, row: TableRecord) => {
-    console.log(row);
-    console.log(action);
+
     switch (action) {
       case "status":
         if ("status" in row) {
@@ -151,6 +228,29 @@ function App() {
               item.studentId === row.studentId ? row : item
             )
           );
+
+          // update attendance in database
+          axios
+            .put(
+              `${config.API_BASE_URL}/attendance/${row.studentId}/${selectedEvent?.id}`,
+              { status: row.status }
+            )
+            .then((res) => {
+              console.log("Attendance updated in database:", res);
+              showToast(
+                `${
+                  row.name
+                }'s attendance marked as ${row.status.toLowerCase()}`,
+                "success"
+              );
+            })
+            .catch((err) => {
+              console.error(err);
+              showToast(
+                `Failed to update ${row.name}'s attendance status`,
+                "error"
+              );
+            });
         }
         break;
       case "edit":
@@ -221,6 +321,15 @@ function App() {
     setEditingStudent(null);
   };
 
+  const handleEventChange = (event: Event) => {
+    setSelectedEvent(event);
+  };
+
+  const handleDateChange = (date: Date) => {
+    setSelectedDate(date);
+    // You can add additional logic here when date changes
+  };
+
   const attendanceColumns = [
     { key: "studentId", label: "ID", width: "7" },
     { key: "name", label: "NAME", width: "24" },
@@ -237,6 +346,40 @@ function App() {
     { key: "year", label: "YEAR", width: "10" },
     { key: "section", label: "SECTION", width: "10" },
   ];
+
+  const courseOptions = [
+    { value: "all", label: "All Courses" },
+    { value: "bsit", label: "BSIT" },
+    { value: "bshm", label: "BSHM" },
+    { value: "bscrim", label: "BSCrim" },
+  ];
+
+  const yearOptions = [
+    { value: "all", label: "All Years" },
+    { value: "1", label: "Year 1" },
+    { value: "2", label: "Year 2" },
+    { value: "3", label: "Year 3" },
+    { value: "4", label: "Year 4" },
+  ];
+
+  const sectionOptions = [
+    { value: "all", label: "All Sections" },
+    { value: "a", label: "Section A" },
+    { value: "b", label: "Section B" },
+    { value: "c", label: "Section C" },
+  ];
+
+  const handleSearch = (value: string) => {
+    console.log("Searching for:", value);
+  };
+
+  const handleLogout = () => {
+    console.log("Logging out...");
+  };
+
+  const handleDownload = () => {
+    console.log("Exporting data...");
+  };
 
   return (
     <div className="app bg-background-light h-[100vh] pb-5">
@@ -276,8 +419,22 @@ function App() {
                   variant="primary"
                   onClick={() => setIsRfidModalOpen(true)}
                 />
-                <DatePicker placeholder="Date" />
-                <EventSelector placeholder="Select Event" />
+                <DatePicker
+                  placeholder="Date"
+                  value={selectedDate}
+                  onChange={handleDateChange}
+                />
+                <EventSelector
+                  placeholder="Select Event"
+                  events={events.map((event) => ({
+                    id: event.id.toString(),
+                    name: event.title,
+                    date: event.event_date,
+                    location: event.location,
+                  }))}
+                  value={selectedEvent}
+                  onChange={handleEventChange}
+                />
               </>
             ) : (
               <Button
@@ -299,17 +456,15 @@ function App() {
         </div>
       </div>
 
+      {/* Attendance / Students tables */}
       {selectedTable === "attendance" ? (
-        <>
-          {/* Table Section */}
-          <div className="w-[60rem] h-full mx-auto bg-white rounded-md shadow-sm">
-            <Table
-              columns={attendanceColumns}
-              data={attendanceData}
-              onActionClick={handleTableAction}
-            />
-          </div>
-        </>
+        <div className="w-[60rem] h-full mx-auto bg-white rounded-md shadow-sm">
+          <Table
+            columns={attendanceColumns}
+            data={attendanceData}
+            onActionClick={handleTableAction}
+          />
+        </div>
       ) : (
         <div className="w-[60rem] h-full mx-auto bg-white rounded-md shadow-sm">
           <Table
@@ -391,6 +546,14 @@ function App() {
         )}
       </Modal>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }
 
