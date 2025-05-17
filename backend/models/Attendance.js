@@ -3,7 +3,7 @@ const db = require('../config/database');
 class Attendance {
   static async findByEvent(eventId) {
     const query = `
-      SELECT a.*, s.name, s.student_id, s.course, s.year, s.section
+      SELECT a.*, s.name, s.student_id, s.course, s.year, s.section, s.student_id
       FROM attendance a
       JOIN students s ON a.student_id = s.student_id
       WHERE a.event_id = $1

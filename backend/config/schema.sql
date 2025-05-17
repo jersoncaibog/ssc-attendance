@@ -74,3 +74,22 @@ CREATE TRIGGER update_events_updated_at BEFORE
 UPDATE ON events FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_attendance_updated_at BEFORE
 UPDATE ON attendance FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Create function to notify attendance changes
+CREATE OR REPLACE FUNCTION notify_attendance_change() RETURNS TRIGGER AS $$ BEGIN PERFORM pg_notify(
+        'attendance_changes',
+        json_build_object(
+            'operation',
+            TG_OP,
+            'record',
+            row_to_json(NEW)
+        )::text
+    );
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+-- Create trigger for attendance changes
+CREATE TRIGGER attendance_change_notification
+AFTER
+INSERT
+    OR
+UPDATE ON attendance FOR EACH ROW EXECUTE FUNCTION notify_attendance_change();
