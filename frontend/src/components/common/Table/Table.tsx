@@ -1,4 +1,6 @@
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import NorthIcon from "@mui/icons-material/North";
+import SouthIcon from "@mui/icons-material/South";
 import { useEffect, useRef, useState } from "react";
 
 interface Column {
@@ -41,6 +43,10 @@ export const Table = ({
   onActionClick,
 }: TableProps) => {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc";
+  }>({ key: "name", direction: "asc" });
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,9 +86,28 @@ export const Table = ({
     setActiveMenu(null);
   };
 
-  const isAttendanceRecord = (record: TableRecord): record is AttendanceRecord => {
+  const isAttendanceRecord = (
+    record: TableRecord
+  ): record is AttendanceRecord => {
     return "status" in record;
   };
+
+  const handleSort = (key: string) => {
+    setSortConfig((current) => ({
+      key,
+      direction:
+        current.key === key && current.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const sortedData = [...data].sort((a, b) => {
+    const aValue = a[sortConfig.key as keyof TableRecord];
+    const bValue = b[sortConfig.key as keyof TableRecord];
+
+    if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+    if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+    return 0;
+  });
 
   return (
     <div
@@ -94,117 +119,144 @@ export const Table = ({
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`px-4 py-3 text-left text-xs font-semibold text-gray-600`}
+                className="px-4 py-3 text-left text-xs font-semibold text-gray-600 cursor-pointer"
                 style={{ width: column.width ? `${column.width}rem` : "auto" }}
+                onClick={() => handleSort(column.key)}
               >
-                {column.label}
+                <div className="flex items-center gap-1">
+                  {column.label}
+                  {sortConfig.key === column.key &&
+                    (sortConfig.direction === "asc" ? (
+                      <SouthIcon sx={{ fontSize: "1rem" }} />
+                    ) : (
+                      <NorthIcon sx={{ fontSize: "1rem" }} />
+                    ))}
+                </div>
               </th>
             ))}
             <th className="w-10"></th>
           </tr>
         </thead>
         <tbody>
-          {data.map((row, rowIndex) => (
-            <tr
-              key={rowIndex}
-              className="border-b border-border-dark hover:bg-gray-50 "
-            >
-              {columns.map((column) => (
-                <td
-                  key={`${rowIndex}-${column.key}`}
-                  className="px-4 text-gray-700 text-xs"
-                >
-                  {column.key === "status" && isAttendanceRecord(row) ? (
-                    <span
-                      className={`px-2 py-1 rounded-md font-medium ${getStatusColor(
-                        row.status
-                      )}`}
-                    >
-                      {row.status}
-                    </span>
-                  ) : (
-                    row[column.key as keyof TableRecord]
-                  )}
-                </td>
-              ))}
-              <td className="px-3 py-1.5">
-                <div className="relative" ref={menuRef}>
-                  <button
-                    onClick={() => {
-                      setActiveMenu(activeMenu === rowIndex ? null : rowIndex);
-                    }}
-                    className="p-1 hover:bg-gray-100 rounded-md transition-colors"
-                  >
-                    <MoreVertIcon fontSize="small" className="text-gray-600" />
-                  </button>
-                  {activeMenu === rowIndex && (
-                    <div className="absolute right-0 mt-1 bg-white border border-border-dark rounded-md shadow-lg py-1 z-10 min-w-[120px]">
-                      {isAttendanceRecord(row) ? (
-                        <>
-                          <button
-                            onClick={() => {
-                              handleActionClick("status", {
-                                ...row,
-                                status: "Present",
-                              });
-                            }}
-                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                          >
-                            Present
-                          </button>
-                          <button
-                            onClick={() => {
-                              handleActionClick("status", {
-                                ...row,
-                                status: "Absent",
-                              });
-                            }}
-                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                          >
-                            Absent
-                          </button>
-                          <button
-                            onClick={() => {
-                              handleActionClick("status", {
-                                ...row,
-                                status: "Excused",
-                              });
-                            }}
-                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                          >
-                            Excused
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => {
-                              handleActionClick("metrics", row);
-                            }}
-                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                          >
-                            Metrics
-                          </button>
-                          <button
-                            onClick={() => handleActionClick("edit", row)}
-                            className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleActionClick("delete", row)}
-                            className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50"
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
+          {sortedData.length === 0 ? (
+            <tr>
+              <td
+                colSpan={columns.length + 1}
+                className="h-32 text-center text-gray-400 text-sm"
+              >
+                No data available
               </td>
             </tr>
-          ))}
+          ) : (
+            <>
+              {sortedData.map((row, rowIndex) => (
+                <tr
+                  key={rowIndex}
+                  className="border-b border-border-dark hover:bg-gray-50 "
+                >
+                  {columns.map((column) => (
+                    <td
+                      key={`${rowIndex}-${column.key}`}
+                      className="px-4 text-gray-700 text-xs"
+                    >
+                      {column.key === "status" && isAttendanceRecord(row) ? (
+                        <span
+                          className={`px-2 py-1 rounded-md font-medium ${getStatusColor(
+                            row.status
+                          )}`}
+                        >
+                          {row.status}
+                        </span>
+                      ) : (
+                        row[column.key as keyof TableRecord]
+                      )}
+                    </td>
+                  ))}
+                  <td className="px-3 py-1.5">
+                    <div className="relative" ref={menuRef}>
+                      <button
+                        onClick={() => {
+                          setActiveMenu(
+                            activeMenu === rowIndex ? null : rowIndex
+                          );
+                        }}
+                        className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                      >
+                        <MoreVertIcon
+                          fontSize="small"
+                          className="text-gray-600"
+                        />
+                      </button>
+                      {activeMenu === rowIndex && (
+                        <div className="absolute right-0 mt-1 bg-white border border-border-dark rounded-md shadow-lg py-1 z-10 min-w-[120px]">
+                          {isAttendanceRecord(row) ? (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handleActionClick("status", {
+                                    ...row,
+                                    status: "Present",
+                                  });
+                                }}
+                                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                              >
+                                Present
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleActionClick("status", {
+                                    ...row,
+                                    status: "Absent",
+                                  });
+                                }}
+                                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                              >
+                                Absent
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleActionClick("status", {
+                                    ...row,
+                                    status: "Excused",
+                                  });
+                                }}
+                                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                              >
+                                Excused
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handleActionClick("metrics", row);
+                                }}
+                                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                              >
+                                Metrics
+                              </button>
+                              <button
+                                onClick={() => handleActionClick("edit", row)}
+                                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleActionClick("delete", row)}
+                                className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </>
+          )}
         </tbody>
       </table>
     </div>

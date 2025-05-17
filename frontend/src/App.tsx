@@ -3,7 +3,7 @@ import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import SaveAltIcon from "@mui/icons-material/SaveAlt";
 import { Analytics } from "@vercel/analytics/react";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import "./App.css";
 import { Button } from "./components/common/Button/Button";
@@ -95,6 +95,11 @@ interface AttendanceUpdatePayload {
 function AppContent() {
   const { showToast } = useToast();
   const [selectedTable, setSelectedTable] = useState("attendance");
+  const [selectedFilters, setSelectedFilters] = useState({
+    course: "all",
+    year: "all",
+    section: "all",
+  });
   const [isRfidModalOpen, setIsRfidModalOpen] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [isEditStudentModalOpen, setIsEditStudentModalOpen] = useState(false);
@@ -112,6 +117,8 @@ function AppContent() {
 
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
   const [students, setStudents] = useState<StudentRecord[]>([]);
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch students from database
   useEffect(() => {
@@ -219,7 +226,6 @@ function AppContent() {
   }, [selectedEvent]);
 
   const handleTableAction = (action: string, row: TableRecord) => {
-
     switch (action) {
       case "status":
         if ("status" in row) {
@@ -323,6 +329,7 @@ function AppContent() {
 
   const handleEventChange = (event: Event) => {
     setSelectedEvent(event);
+    showToast(`Viewing attendance for ${event.name}`, "info");
   };
 
   const handleDateChange = (date: Date) => {
@@ -370,7 +377,7 @@ function AppContent() {
   ];
 
   const handleSearch = (value: string) => {
-    console.log("Searching for:", value);
+    setSearchQuery(value);
   };
 
   const handleLogout = () => {
@@ -379,6 +386,47 @@ function AppContent() {
 
   const handleDownload = () => {
     console.log("Exporting data...");
+  };
+
+  // Filter the data based on selected filters and search query
+  const getFilteredData = useCallback(() => {
+    const data = selectedTable === "attendance" ? attendanceData : students;
+
+    return data.filter((item) => {
+      // Search filter
+      const searchMatch =
+        searchQuery === "" ||
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.studentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.course.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Other filters
+      const courseMatch =
+        selectedFilters.course === "all" ||
+        item.course.toLowerCase() === selectedFilters.course;
+      const yearMatch =
+        selectedFilters.year === "all" || item.year === selectedFilters.year;
+      const sectionMatch =
+        selectedFilters.section === "all" ||
+        item.section.toLowerCase() === selectedFilters.section;
+
+      return searchMatch && courseMatch && yearMatch && sectionMatch;
+    });
+  }, [selectedTable, attendanceData, students, selectedFilters, searchQuery]);
+
+  const handleFilterChange = (
+    filterType: "course" | "year" | "section",
+    value: string
+  ) => {
+    setSelectedFilters((prev) => ({
+      ...prev,
+      [filterType]: value,
+    }));
+
+    // Show toast for filter change
+    const filterName = filterType.charAt(0).toUpperCase() + filterType.slice(1);
+    const filterValue = value === "all" ? "All" : value.toUpperCase();
+    showToast(`${filterName} filter set to ${filterValue}`, "info");
   };
 
   return (
@@ -449,9 +497,24 @@ function AppContent() {
           <div className="border-r h-8 border-border-light mx-1 text-xs"></div>
           {/* Filters Section */}
           <div className="flex flex-row items-center gap-3 mr-auto text-xs">
-            <DropdownSelector placeholder="Course" options={courseOptions} />
-            <DropdownSelector placeholder="Year" options={yearOptions} />
-            <DropdownSelector placeholder="Section" options={sectionOptions} />
+            <DropdownSelector
+              placeholder="Course"
+              options={courseOptions}
+              value={selectedFilters.course}
+              onChange={(value) => handleFilterChange("course", value)}
+            />
+            <DropdownSelector
+              placeholder="Year"
+              options={yearOptions}
+              value={selectedFilters.year}
+              onChange={(value) => handleFilterChange("year", value)}
+            />
+            <DropdownSelector
+              placeholder="Section"
+              options={sectionOptions}
+              value={selectedFilters.section}
+              onChange={(value) => handleFilterChange("section", value)}
+            />
           </div>
         </div>
       </div>
@@ -461,7 +524,7 @@ function AppContent() {
         <div className="w-[60rem] h-full mx-auto bg-white rounded-md shadow-sm">
           <Table
             columns={attendanceColumns}
-            data={attendanceData}
+            data={getFilteredData()}
             onActionClick={handleTableAction}
           />
         </div>
@@ -469,7 +532,7 @@ function AppContent() {
         <div className="w-[60rem] h-full mx-auto bg-white rounded-md shadow-sm">
           <Table
             columns={studentColumns}
-            data={students}
+            data={getFilteredData()}
             onActionClick={handleTableAction}
           />
         </div>
