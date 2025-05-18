@@ -23,11 +23,11 @@ export const Metrics = ({ studentData, onClose }: MetricsProps) => {
 
   return (
     <div className="p-6">
-      <h2 className="text-xl font-semibold mb-6">Student Metrics</h2>
+      <h2 className="text-base font-semibold mb-6">Student Metrics</h2>
 
       {/* Student Info */}
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-gray-600 mb-2">
+        <h3 className="text-sm font-medium text-gray-600 mb-3">
           Student Information
         </h3>
         <div className="grid grid-cols-2 gap-4 text-sm border border-border-dark p-4 rounded-md">
@@ -54,17 +54,19 @@ export const Metrics = ({ studentData, onClose }: MetricsProps) => {
 
       {/* Attendance Metrics */}
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-gray-600 mb-2">
+        <h3 className="text-sm font-medium text-gray-600 mb-3">
           Attendance Overview
         </h3>
         <div className="grid grid-cols-2 gap-4">
           <div className="border border-border-dark p-4 rounded-md flex flex-col gap-1 text-center">
-            <p className="text-gray-500 text-sm">Total Events</p>
-            <p className="text-2xl font-semibold text-zinc-700">{metrics.totalEvents}</p>
+            <p className="text-gray-500 text-xs">Total Events</p>
+            <p className="text-base font-semibold">
+              {metrics.totalEvents}
+            </p>
           </div>
           <div className="border border-border-dark p-4 rounded-md flex flex-col gap-1 text-center">
-            <p className="text-gray-500 text-sm">Attendance Rate</p>
-            <p className="text-2xl font-semibold text-zinc-700">
+            <p className="text-gray-500 text-xs">Attendance Rate</p>
+            <p className="text-base font-semibold">
               {metrics.attendanceRate}
             </p>
           </div>
@@ -73,25 +75,25 @@ export const Metrics = ({ studentData, onClose }: MetricsProps) => {
 
       {/* Status Breakdown */}
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-gray-600 mb-2">
+        <h3 className="text-sm font-medium text-gray-600 mb-3">
           Status Breakdown
         </h3>
         <div className="grid grid-cols-3 gap-4">
           <div className="border border-border-dark p-4 rounded-md flex flex-col gap-1 text-center">
-            <p className="text-gray-500 text-sm">Present</p>
-            <p className="text-xl font-semibold text-zinc-700">
+            <p className="text-gray-500 text-xs">Present</p>
+            <p className="text-base font-semibold">
               {metrics.present}
             </p>
           </div>
           <div className="border border-border-dark p-4 rounded-md flex flex-col gap-1 text-center">
-            <p className="text-gray-500 text-sm">Absent</p>
-            <p className="text-xl font-semibold text-zinc-700">
+            <p className="text-gray-500 text-xs">Absent</p>
+            <p className="text-base font-semibold">
               {metrics.absent}
             </p>
           </div>
           <div className="border border-border-dark p-4 rounded-md flex flex-col gap-1 text-center">
-            <p className="text-gray-500 text-sm">Excused</p>
-            <p className="text-xl font-semibold text-zinc-700">
+            <p className="text-gray-500 text-xs">Excused</p>
+            <p className="text-base font-semibold">
               {metrics.excused}
             </p>
           </div>

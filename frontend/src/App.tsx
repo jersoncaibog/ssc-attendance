@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/react";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { io } from "socket.io-client";
+import * as XLSX from "xlsx";
 import "./App.css";
 import { Button } from "./components/common/Button/Button";
 import { DatePicker } from "./components/common/DatePicker/DatePicker";
@@ -119,6 +120,10 @@ function AppContent() {
   const [students, setStudents] = useState<StudentRecord[]>([]);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc";
+  }>({ key: "name", direction: "asc" });
 
   // Fetch students from database
   useEffect(() => {
@@ -159,8 +164,6 @@ function AppContent() {
       axios
         .get(`${config.API_BASE_URL}/attendance/event/${selectedEvent?.id}`)
         .then((res) => {
-          console.log(res);
-
           const mappedAttendance = res.data.map((record: DBAttendance) => ({
             studentId: record.student_id,
             name: record.name,
@@ -170,12 +173,13 @@ function AppContent() {
             status: record.status,
           }));
 
-          console.log(mappedAttendance);
           setAttendanceData(mappedAttendance);
         })
         .catch((err) => {
           console.error(err);
         });
+    } else {
+      setAttendanceData([]);
     }
   }, [selectedEvent]);
 
@@ -291,16 +295,52 @@ function AppContent() {
     setIsAddStudentModalOpen(true);
   };
 
-  const handleAddStudentSubmit = (data: {
+  const handleAddStudentSubmit = async (data: {
     studentId: string;
     name: string;
     course: string;
     year: string;
     section: string;
+    rfid: string;
   }) => {
-    console.log("Adding new student:", data);
-    setStudents((prev) => [...prev, data]);
-    setIsAddStudentModalOpen(false);
+    try {
+      const response = await axios.post(`${config.API_BASE_URL}/students`, {
+        student_id: data.studentId,
+        name: data.name,
+        course: data.course.toLowerCase(),
+        year: data.year,
+        section: data.section.toLowerCase(),
+        rfid: data.rfid.trim(), // Trim whitespace and use empty string if not provided
+      });
+
+      const newStudent = response.data;
+
+      // Update local state with the new student
+      setStudents((prev) => [
+        ...prev,
+        {
+          studentId: newStudent.student_id,
+          name: newStudent.name,
+          course: newStudent.course.toUpperCase(),
+          year: newStudent.year,
+          section: newStudent.section.toUpperCase(),
+          rfid: newStudent.rfid,
+        },
+      ]);
+
+      showToast(`Student ${newStudent.name} added successfully`, "success");
+      setIsAddStudentModalOpen(false);
+    } catch (error: unknown) {
+      console.error("Error adding student:", error);
+      if (axios.isAxiosError(error)) {
+        showToast(
+          error.response?.data?.message || "Failed to add student",
+          "error"
+        );
+      } else {
+        showToast("Failed to add student", "error");
+      }
+    }
   };
 
   const handleEditStudentSubmit = (data: {
@@ -334,7 +374,94 @@ function AppContent() {
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
-    // You can add additional logic here when date changes
+    setSelectedEvent(undefined); // Reset selected event when date changes
+  };
+
+  const handleAddEvent = async (eventData: {
+    title: string;
+    description: string;
+    event_date: string;
+    location: string;
+  }) => {
+    try {
+      const response = await axios.post(
+        `${config.API_BASE_URL}/events/`,
+        eventData
+      );
+      const newEvent = response.data;
+
+      // Format both dates to YYYY-MM-DD for comparison
+      const formattedSelectedDate = selectedDate.toLocaleDateString("en-CA");
+      const formattedEventDate = new Date(
+        newEvent.event_date
+      ).toLocaleDateString("en-CA");
+
+      if (formattedEventDate === formattedSelectedDate) {
+        console.log("Adding event to list");
+        setEvents((prevEvents) => [...prevEvents, newEvent]);
+      }
+
+      // Show success toast
+      showToast(`Event "${newEvent.title}" created successfully`);
+    } catch (error) {
+      console.error("Error creating event:", error);
+      showToast("Failed to create event");
+    }
+  };
+
+  const handleEditEvent = async (event: Event) => {
+    try {
+      const response = await axios.put(
+        `${config.API_BASE_URL}/events/${event.id}`,
+        {
+          title: event.name,
+          description: event.description,
+          event_date: event.date,
+          location: event.location,
+        }
+      );
+      const updatedEvent = response.data;
+
+      // Update the event in the events list if it matches the selected date
+      const formattedSelectedDate = selectedDate.toLocaleDateString("en-CA");
+      const formattedEventDate = new Date(
+        updatedEvent.event_date
+      ).toLocaleDateString("en-CA");
+
+      if (formattedEventDate === formattedSelectedDate) {
+        setEvents((prevEvents) =>
+          prevEvents.map((e) =>
+            e.id.toString() === updatedEvent.id.toString() ? updatedEvent : e
+          )
+        );
+      }
+
+      showToast(`Event "${updatedEvent.title}" updated successfully`);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      showToast("Failed to update event");
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await axios.delete(`${config.API_BASE_URL}/events/${eventId}`);
+
+      // Remove the event from the events list
+      setEvents((prevEvents) =>
+        prevEvents.filter((e) => e.id.toString() !== eventId)
+      );
+
+      // If the deleted event was selected, clear the selection
+      if (selectedEvent?.id === eventId) {
+        setSelectedEvent(undefined);
+      }
+
+      showToast("Event deleted successfully");
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      showToast("Failed to delete event");
+    }
   };
 
   const attendanceColumns = [
@@ -348,6 +475,7 @@ function AppContent() {
 
   const studentColumns = [
     { key: "studentId", label: "ID", width: "20" },
+    { key: "rfid", label: "RFID", width: "20" },
     { key: "name", label: "NAME", width: "100" },
     { key: "course", label: "COURSE", width: "20" },
     { key: "year", label: "YEAR", width: "10" },
@@ -385,7 +513,53 @@ function AppContent() {
   };
 
   const handleDownload = () => {
-    console.log("Exporting data...");
+    const data = getFilteredData();
+    // Sort the data using the same logic as the table
+    const sortedData = [...data].sort((a, b) => {
+      const aValue = a[sortConfig.key as keyof TableRecord];
+      const bValue = b[sortConfig.key as keyof TableRecord];
+
+      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(sortedData);
+    const workbook = XLSX.utils.book_new();
+
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      selectedTable === "attendance" ? "Attendance" : "Students"
+    );
+
+    // Generate Excel file
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${selectedTable}_${
+      new Date().toISOString().split("T")[0]
+    }.xlsx`;
+
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    showToast(`Exported ${sortedData.length} records to Excel`, "success");
   };
 
   // Filter the data based on selected filters and search query
@@ -429,11 +603,68 @@ function AppContent() {
     showToast(`${filterName} filter set to ${filterValue}`, "info");
   };
 
+  // Handler for RFID input keydown
+  const handleRfidInputKeyDown = async (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    if (e.key === "Enter") {
+      const input = e.currentTarget;
+      const rfid = input.value;
+      console.log("RFID scanned:", rfid);
+      console.log(input);
+
+      if (!selectedEvent) {
+        showToast("Please select an event first", "error");
+        return;
+      }
+
+      try {
+        const response = await axios.put(
+          `${config.API_BASE_URL}/attendance/rfid/${rfid}/${selectedEvent.id}`
+        );
+
+        const { student } = response.data;
+        showToast(`${student.name} marked as Present`, "success");
+
+        // Update local attendance data
+        setAttendanceData((prevData) => {
+          const newData = [...prevData];
+          const index = newData.findIndex(
+            (item) => item.studentId === student.studentId
+          );
+
+          if (index !== -1) {
+            newData[index] = {
+              ...newData[index],
+              status: "Present",
+            };
+          }
+
+          return newData;
+        });
+      } catch (error: unknown) {
+        console.error("Error updating attendance:", error);
+        if (axios.isAxiosError(error)) {
+          showToast(
+            error.response?.data?.message || "Failed to update attendance",
+            "error"
+          );
+        } else {
+          showToast("Failed to update attendance", "error");
+        }
+      } finally {
+        console.log(input.value);
+        // Clear the input value using the stored reference
+        input.value = "";
+      }
+    }
+  };
+
   return (
     <div className="app bg-background-light h-[100vh] pb-5">
       <Analytics />
       {/* Header */}
-      <div className="w-full h-fit flex flex-col p-5 border-b border-border-dark bg-white gap-5 mb-6">
+      <div className="w-full h-fit flex flex-col p-5 border-b border-border-dark bg-white gap-5 mb-6 z-20">
         {/* Top part */}
         <div className="flex flex-row items-center w-full">
           {/* Logo and Table selector */}
@@ -444,15 +675,17 @@ function AppContent() {
           <SearchBar onSearch={handleSearch} />
           {/* User Menu */}
           <div className="flex flex-row items-center gap-3 text-sm">
-            <span className="font-medium text-sm text-gray-600">President</span>
+            <span className="font-medium text-sm text-gray-600 hidden sm:block">
+              President
+            </span>
             <UserMenu onLogout={handleLogout} />
           </div>
         </div>
 
         {/* Menu bar */}
-        <div className="flex flex-row items-center gap-3 w-[60rem] ">
+        <div className="flex lg:flex-row flex-col items-center gap-3 w-full lg:w-[60rem]">
           {/* Date and Event Group */}
-          <div className="flex flex-row gap-3">
+          <div className="flex flex-row gap-3 w-full lg:w-auto">
             <Button
               onClick={handleDownload}
               icon={<SaveAltIcon sx={{ fontSize: "1rem" }} />}
@@ -473,15 +706,20 @@ function AppContent() {
                   onChange={handleDateChange}
                 />
                 <EventSelector
-                  placeholder="Select Event"
+                  className="w-40"
+                  value={selectedEvent}
+                  onChange={handleEventChange}
+                  placeholder="Select event"
                   events={events.map((event) => ({
                     id: event.id.toString(),
                     name: event.title,
                     date: event.event_date,
                     location: event.location,
+                    description: event.description,
                   }))}
-                  value={selectedEvent}
-                  onChange={handleEventChange}
+                  onAddEvent={handleAddEvent}
+                  onEditEvent={handleEditEvent}
+                  onDeleteEvent={handleDeleteEvent}
                 />
               </>
             ) : (
@@ -494,9 +732,9 @@ function AppContent() {
               />
             )}
           </div>
-          <div className="border-r h-8 border-border-light mx-1 text-xs"></div>
+          <div className="hidden lg:block border-r h-8 border-border-light mx-1 text-xs"></div>
           {/* Filters Section */}
-          <div className="flex flex-row items-center gap-3 mr-auto text-xs">
+          <div className="flex flex-row items-center gap-3 w-full lg:w-auto text-xs">
             <DropdownSelector
               placeholder="Course"
               options={courseOptions}
@@ -519,40 +757,58 @@ function AppContent() {
         </div>
       </div>
 
-      {/* Attendance / Students tables */}
-      {selectedTable === "attendance" ? (
-        <div className="w-[60rem] h-full mx-auto bg-white rounded-md shadow-sm">
+      <div className="w-full h-full px-5">
+        {/* Attendance / Students tables */}
+        {selectedTable === "attendance" ? (
           <Table
             columns={attendanceColumns}
             data={getFilteredData()}
             onActionClick={handleTableAction}
+            sortConfig={sortConfig}
+            onSortChange={setSortConfig}
           />
-        </div>
-      ) : (
-        <div className="w-[60rem] h-full mx-auto bg-white rounded-md shadow-sm">
+        ) : (
           <Table
             columns={studentColumns}
             data={getFilteredData()}
             onActionClick={handleTableAction}
+            sortConfig={sortConfig}
+            onSortChange={setSortConfig}
           />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* RFID Check-in Modal */}
       <Modal isOpen={isRfidModalOpen} onClose={() => setIsRfidModalOpen(false)}>
-        <div className="p-6 text-center">
-          <h2 className="font-light text-xl">Ready to Scan</h2>
-          <img
-            src="/rfid-scan.jpg"
-            alt="RFID Scanner"
-            className="w-32 mx-auto mt-2"
-          />
-          <p className="font-medium text-sm mt-8">
-            Hold near the RFID reader to scan.
+        <div
+          className="p-6 text-center"
+          onClick={(e) => {
+            // Find and focus the input when clicking anywhere in the modal
+            const input = e.currentTarget.querySelector("input");
+            input?.focus();
+          }}
+        >
+          <div className="flex flex-row items-center justify-center rounded-full w-fit mx-auto border-[2px] border-gray-500 overflow-hidden mt-8">
+            <img
+              src="/rfid-scan.svg"
+              alt="RFID Scanner"
+              className="h-28 w-28 translate-x-[-0.5rem] translate-y-[0.5rem] mx-auto"
+            />
+          </div>
+          <h2 className="font-medium select-none mt-12">Ready to Scan</h2>
+          <p className="text-sm font-light text-gray-600 mt-4 select-none">
+            Please tap your RFID card on the RFID reader to record attendance
+            for this event.
           </p>
+          <input
+            type="text"
+            className="sr-only"
+            autoFocus
+            onKeyDown={handleRfidInputKeyDown}
+          />
           <Button
             label="Cancel"
-            className="min-w-full mt-8 py-2 !text-sm"
+            className="min-w-full mt-12 py-2 !text-sm"
             variant="secondary"
             onClick={() => setIsRfidModalOpen(false)}
           />

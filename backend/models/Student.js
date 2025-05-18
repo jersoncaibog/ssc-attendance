@@ -47,6 +47,12 @@ class Student {
     const result = await db.query(query, [course]);
     return result.rows;
   }
+
+  static async findByRfid(rfid) {
+    const query = 'SELECT * FROM students WHERE rfid = $1';
+    const result = await db.query(query, [rfid]);
+    return result.rows[0];
+  }
 }
 
 module.exports = Student; 

@@ -10,6 +10,7 @@ interface AddStudentFormProps {
     course: string;
     year: string;
     section: string;
+    rfid: string;
   }) => void;
   onCancel: () => void;
 }
@@ -43,38 +44,39 @@ export const AddStudentForm = ({ onSubmit, onCancel }: AddStudentFormProps) => {
       course: formData.get("course") as string,
       year: formData.get("year") as string,
       section: formData.get("section") as string,
+      rfid: formData.get("rfid") as string,
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="p-6">
-      <h2 className="text-lg font-semibold mb-6">Add New Student</h2>
+      <h2 className="text-base font-semibold mb-6">Add New Student</h2>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Student ID
           </label>
           <Textbox
             name="studentId"
             placeholder="Enter student ID (e.g. 23-0001)"
-            className="w-full py-2" 
+            className="w-full py-2"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Full Name
           </label>
           <Textbox
             name="name"
             placeholder="Enter full name (e.g. John Doe)"
-            className="w-full py-2" 
+            className="w-full py-2"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Course
           </label>
           <DropdownSelector
@@ -86,7 +88,7 @@ export const AddStudentForm = ({ onSubmit, onCancel }: AddStudentFormProps) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Year Level
           </label>
           <DropdownSelector
@@ -98,7 +100,7 @@ export const AddStudentForm = ({ onSubmit, onCancel }: AddStudentFormProps) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Section
           </label>
           <DropdownSelector
@@ -106,6 +108,17 @@ export const AddStudentForm = ({ onSubmit, onCancel }: AddStudentFormProps) => {
             options={sectionOptions}
             placeholder="Select section"
             className="!w-full py-1.5"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            RFID
+          </label>
+          <Textbox
+            name="rfid"
+            placeholder="Enter RFID (optional)"
+            className="w-full py-2"
           />
         </div>
       </div>

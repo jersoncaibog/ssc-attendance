@@ -29,6 +29,7 @@ export const Textbox = ({
         onChange={onChange}
         className="w-full outline-none text-xs bg-transparent"
         placeholder={placeholder}
+        autoComplete="off"
       />
     </div>
   );

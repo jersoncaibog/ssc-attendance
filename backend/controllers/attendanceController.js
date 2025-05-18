@@ -59,6 +59,37 @@ const attendanceController = {
     } catch (error) {
       res.status(500).json({ message: 'Error fetching attendance stats', error: error.message });
     }
+  },
+
+  async updateAttendanceByRfid(req, res) {
+    try {
+      const { rfid, eventId } = req.params;
+      
+      // Find student by RFID
+      const student = await Student.findByRfid(rfid);
+      if (!student) {
+        return res.status(404).json({ message: 'Student not found with this RFID' });
+      }
+
+      // Update attendance status to Present
+      const attendance = await Attendance.updateStatus(student.student_id, eventId, 'Present');
+      if (!attendance) {
+        return res.status(404).json({ message: 'Attendance record not found' });
+      }
+
+      res.json({
+        ...attendance,
+        student: {
+          studentId: student.student_id,
+          name: student.name,
+          course: student.course,
+          year: student.year,
+          section: student.section
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Error updating attendance by RFID', error: error.message });
+    }
   }
 };
 

@@ -82,11 +82,11 @@ export const EditStudentForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="p-6">
-      <h2 className="text-lg font-semibold mb-6">Edit Student</h2>
+      <h2 className="text-base font-semibold mb-6">Edit Student</h2>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Student ID
           </label>
           <Textbox
@@ -99,7 +99,7 @@ export const EditStudentForm = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Full Name
           </label>
           <Textbox
@@ -112,7 +112,7 @@ export const EditStudentForm = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Course
           </label>
           <DropdownSelector
@@ -126,7 +126,7 @@ export const EditStudentForm = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Year Level
           </label>
           <DropdownSelector
@@ -140,7 +140,7 @@ export const EditStudentForm = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-gray-700 mb-1">
             Section
           </label>
           <DropdownSelector
@@ -156,7 +156,7 @@ export const EditStudentForm = ({
         <div>
           <label
             htmlFor="rfid"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-xs font-medium text-gray-700 mb-1"
           >
             RFID Tag
           </label>

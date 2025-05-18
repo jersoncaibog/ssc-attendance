@@ -34,6 +34,11 @@ interface TableProps {
   data: TableRecord[];
   className?: string;
   onActionClick?: (action: string, row: TableRecord) => void;
+  sortConfig: {
+    key: string;
+    direction: "asc" | "desc";
+  };
+  onSortChange: (config: { key: string; direction: "asc" | "desc" }) => void;
 }
 
 export const Table = ({
@@ -41,12 +46,10 @@ export const Table = ({
   data,
   className = "",
   onActionClick,
+  sortConfig,
+  onSortChange,
 }: TableProps) => {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
-  const [sortConfig, setSortConfig] = useState<{
-    key: string;
-    direction: "asc" | "desc";
-  }>({ key: "name", direction: "asc" });
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,9 +76,9 @@ export const Table = ({
       case "present":
         return "text-green-600";
       case "absent":
-        return "text-gray-500";
+        return "text-gray-400";
       case "excused":
-        return "text-orange-600";
+        return "text-orange-400";
       default:
         return "text-gray-700";
     }
@@ -93,11 +96,13 @@ export const Table = ({
   };
 
   const handleSort = (key: string) => {
-    setSortConfig((current) => ({
+    onSortChange({
       key,
       direction:
-        current.key === key && current.direction === "asc" ? "desc" : "asc",
-    }));
+        sortConfig.key === key && sortConfig.direction === "asc"
+          ? "desc"
+          : "asc",
+    });
   };
 
   const sortedData = [...data].sort((a, b) => {
@@ -111,15 +116,19 @@ export const Table = ({
 
   return (
     <div
-      className={`w-full h-full overflow-x-auto rounded-md overflow-hidden border-border-dark border ${className}`}
+      className={`w-full max-w-[70rem] lg:h-[calc(100vh-10.5rem)] lg:max-h-[calc(100vh-10.5rem)] max-h-[calc(100vh-13rem)] overflow-x-auto overflow-y-auto rounded-md border-border-dark bg-white mx-auto shadow-sm border ${className}`}
     >
-      <table className="w-full border-collapse">
-        <thead>
+      <table className="w-full min-w-[800px] border-collapse">
+        <thead className="sticky top-0 z-10">
           <tr className="border-b border-border-dark bg-background-dark">
             {columns.map((column) => (
               <th
                 key={column.key}
-                className="px-4 py-3 text-left text-xs font-semibold text-gray-600 cursor-pointer"
+                className={`px-4 py-3 text-left text-xs font-semibold text-gray-600 cursor-pointer whitespace-nowrap ${
+                  column.key === "status"
+                    ? "sticky right-10 bg-background-dark"
+                    : ""
+                }`}
                 style={{ width: column.width ? `${column.width}rem` : "auto" }}
                 onClick={() => handleSort(column.key)}
               >
@@ -134,7 +143,7 @@ export const Table = ({
                 </div>
               </th>
             ))}
-            <th className="w-10"></th>
+            <th className="w-10 sticky right-0 bg-background-dark"></th>
           </tr>
         </thead>
         <tbody>
@@ -152,12 +161,16 @@ export const Table = ({
               {sortedData.map((row, rowIndex) => (
                 <tr
                   key={rowIndex}
-                  className="border-b border-border-dark hover:bg-gray-50 "
+                  className="border-b border-border-dark hover:bg-gray-100"
                 >
                   {columns.map((column) => (
                     <td
                       key={`${rowIndex}-${column.key}`}
-                      className="px-4 text-gray-700 text-xs"
+                      className={`px-4 text-gray-700 text-xs whitespace-nowrap ${
+                        column.key === "status"
+                          ? "sticky right-10 bg-white"
+                          : ""
+                      }`}
                     >
                       {column.key === "status" && isAttendanceRecord(row) ? (
                         <span
@@ -172,7 +185,7 @@ export const Table = ({
                       )}
                     </td>
                   ))}
-                  <td className="px-3 py-1.5">
+                  <td className="px-3 py-1 sticky right-0 bg-white">
                     <div className="relative" ref={menuRef}>
                       <button
                         onClick={() => {
