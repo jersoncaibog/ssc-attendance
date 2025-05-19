@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const dotenv = require('dotenv');
 const fs = require('fs');
+const path = require('path');
 
 dotenv.config({ path: '.env.local' });
 
@@ -16,15 +17,36 @@ const pool = new Pool({
   }
 });
 
-// Test the connection
-pool.connect((err, client, release) => {
-  if (err) {
-    return console.error('Error acquiring client', err.stack);
-  }
-  console.log('Successfully connected to database');
-  release();
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
 });
 
+// Test the connection with retry
+const testConnection = async (retries = 3, delay = 1000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const client = await pool.connect();
+      console.log('Successfully connected to database');
+      client.release();
+      return true;
+    } catch (err) {
+      console.error(`Database connection attempt ${i + 1} failed:`, err.stack);
+      if (i === retries - 1) {
+        console.error('All database connection attempts failed');
+        return false;
+      }
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+  return false;
+};
+
+// Initial connection test
+testConnection();
+
 module.exports = {
-  query: (text, params) => pool.query(text, params)
+  query: (text, params) => pool.query(text, params),
+  testConnection
 }; 
