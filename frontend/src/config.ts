@@ -4,8 +4,8 @@ interface Config {
 }
 
 const config: Config = {
-  API_BASE_URL: 'http://localhost:5000/api',
-  SOCKET_URL: 'http://localhost:5000'
+  API_BASE_URL: 'http://192.168.1.11:5000/api',
+  SOCKET_URL: 'http://192.168.1.11:5000'
 };
 
 export default config; 

@@ -1,9 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { createServer } = require('http');
-const { Server } = require('socket.io');
-const { setupRealtimeNotifications } = require('./config/database');
 
 // Import routes
 const userRoutes = require('./routes/userRoutes');
@@ -15,18 +12,6 @@ const attendanceRoutes = require('./routes/attendanceRoutes');
 dotenv.config({ path: '.env.local' });
 
 const app = express();
-const httpServer = createServer(app);
-
-// Setup Socket.IO with CORS
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.FRONTEND_URL || '*',
-    methods: ['GET', 'POST']
-  }
-});
-
-// Setup real-time notifications
-setupRealtimeNotifications(io);
 
 // Middleware
 app.use(cors());
@@ -51,6 +36,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-httpServer.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 }); 

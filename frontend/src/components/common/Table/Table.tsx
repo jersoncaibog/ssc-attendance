@@ -2,6 +2,7 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import NorthIcon from "@mui/icons-material/North";
 import SouthIcon from "@mui/icons-material/South";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface Column {
   key: string;
@@ -50,25 +51,29 @@ export const Table = ({
   onSortChange,
 }: TableProps) => {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Check if the click is on a menu button or its child
-      const target = event.target as HTMLElement;
-      const isMenuButton = target.closest("button");
-
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        !isMenuButton
-      ) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setActiveMenu(null);
       }
     };
 
+    const handleScroll = () => {
+      setActiveMenu(null);
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    tableRef.current?.addEventListener("scroll", handleScroll);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      tableRef.current?.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -105,6 +110,15 @@ export const Table = ({
     });
   };
 
+  const handleMenuClick = (rowIndex: number, button: HTMLButtonElement) => {
+    const rect = button.getBoundingClientRect();
+    setMenuPosition({
+      top: rect.bottom + window.scrollY,
+      left: rect.right + window.scrollX - 120, // Adjust for menu width
+    });
+    setActiveMenu(activeMenu === rowIndex ? null : rowIndex);
+  };
+
   const sortedData = [...data].sort((a, b) => {
     const aValue = a[sortConfig.key as keyof TableRecord];
     const bValue = b[sortConfig.key as keyof TableRecord];
@@ -116,7 +130,8 @@ export const Table = ({
 
   return (
     <div
-      className={`w-full max-w-[70rem] lg:h-[calc(100vh-10.5rem)] lg:max-h-[calc(100vh-10.5rem)] max-h-[calc(100vh-13rem)] overflow-x-auto overflow-y-auto rounded-md border-border-dark bg-white mx-auto shadow-sm border ${className}`}
+      ref={tableRef}
+      className={`w-full max-w-[60rem] max-h-[calc(100vh-16rem)] sm:max-h-[calc(100vh-13rem)] lg:h-[calc(100vh-10.5rem)] lg:max-h-[calc(100vh-10.5rem)] overflow-x-auto overflow-y-auto rounded-md border-border-dark bg-white mx-auto shadow-sm border ${className}`}
     >
       <table className="w-full min-w-[800px] border-collapse">
         <thead className="sticky top-0 z-10">
@@ -129,7 +144,7 @@ export const Table = ({
                     ? "sticky right-10 bg-background-dark"
                     : ""
                 }`}
-                style={{ width: column.width ? `${column.width}rem` : "auto" }}
+                // style={{ width: column.width ? `${column.width}rem` : "auto" }}
                 onClick={() => handleSort(column.key)}
               >
                 <div className="flex items-center gap-1">
@@ -153,7 +168,7 @@ export const Table = ({
                 colSpan={columns.length + 1}
                 className="h-32 text-center text-gray-400 text-sm"
               >
-                No data available
+                <div className="max-w-[100vw]">No data available</div>
               </td>
             </tr>
           ) : (
@@ -161,14 +176,14 @@ export const Table = ({
               {sortedData.map((row, rowIndex) => (
                 <tr
                   key={rowIndex}
-                  className="border-b border-border-dark hover:bg-gray-100"
+                  className="border-b border-border-dark hover:bg-gray-100 group"
                 >
                   {columns.map((column) => (
                     <td
                       key={`${rowIndex}-${column.key}`}
                       className={`px-4 text-gray-700 text-xs whitespace-nowrap ${
                         column.key === "status"
-                          ? "sticky right-10 bg-white"
+                          ? "sticky right-10 bg-white group-hover:bg-gray-100"
                           : ""
                       }`}
                     >
@@ -185,14 +200,15 @@ export const Table = ({
                       )}
                     </td>
                   ))}
-                  <td className="px-3 py-1 sticky right-0 bg-white">
-                    <div className="relative" ref={menuRef}>
+                  <td className="px-3 py-1 sticky right-0 bg-white group-hover:bg-gray-100">
+                    <div className="relative">
                       <button
-                        onClick={() => {
-                          setActiveMenu(
-                            activeMenu === rowIndex ? null : rowIndex
-                          );
+                        ref={(el) => {
+                          buttonRefs.current[rowIndex] = el;
                         }}
+                        onClick={(e) =>
+                          handleMenuClick(rowIndex, e.currentTarget)
+                        }
                         className="p-1 hover:bg-gray-100 rounded-md transition-colors"
                       >
                         <MoreVertIcon
@@ -200,70 +216,6 @@ export const Table = ({
                           className="text-gray-600"
                         />
                       </button>
-                      {activeMenu === rowIndex && (
-                        <div className="absolute right-0 mt-1 bg-white border border-border-dark rounded-md shadow-lg py-1 z-10 min-w-[120px]">
-                          {isAttendanceRecord(row) ? (
-                            <>
-                              <button
-                                onClick={() => {
-                                  handleActionClick("status", {
-                                    ...row,
-                                    status: "Present",
-                                  });
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                              >
-                                Present
-                              </button>
-                              <button
-                                onClick={() => {
-                                  handleActionClick("status", {
-                                    ...row,
-                                    status: "Absent",
-                                  });
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                              >
-                                Absent
-                              </button>
-                              <button
-                                onClick={() => {
-                                  handleActionClick("status", {
-                                    ...row,
-                                    status: "Excused",
-                                  });
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                              >
-                                Excused
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => {
-                                  handleActionClick("metrics", row);
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                              >
-                                Metrics
-                              </button>
-                              <button
-                                onClick={() => handleActionClick("edit", row)}
-                                className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleActionClick("delete", row)}
-                                className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50"
-                              >
-                                Delete
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -272,6 +224,84 @@ export const Table = ({
           )}
         </tbody>
       </table>
+
+      {activeMenu !== null &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="fixed bg-white border border-border-dark rounded-md shadow-lg py-1 z-50 max-w-[6rem]"
+            style={{
+              top: `${menuPosition.top}px`,
+              left: `${menuPosition.left}px`,
+            }}
+          >
+            {isAttendanceRecord(sortedData[activeMenu]) ? (
+              <>
+                <button
+                  onClick={() => {
+                    handleActionClick("status", {
+                      ...sortedData[activeMenu],
+                      status: "Present",
+                    });
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                >
+                  Present
+                </button>
+                <button
+                  onClick={() => {
+                    handleActionClick("status", {
+                      ...sortedData[activeMenu],
+                      status: "Absent",
+                    });
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                >
+                  Absent
+                </button>
+                <button
+                  onClick={() => {
+                    handleActionClick("status", {
+                      ...sortedData[activeMenu],
+                      status: "Excused",
+                    });
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                >
+                  Excused
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    handleActionClick("metrics", sortedData[activeMenu]);
+                  }}
+                  className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                >
+                  Metrics
+                </button>
+                <button
+                  onClick={() =>
+                    handleActionClick("edit", sortedData[activeMenu])
+                  }
+                  className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() =>
+                    handleActionClick("delete", sortedData[activeMenu])
+                  }
+                  className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              </>
+            )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

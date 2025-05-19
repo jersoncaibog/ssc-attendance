@@ -4,7 +4,6 @@ import SaveAltIcon from "@mui/icons-material/SaveAlt";
 import { Analytics } from "@vercel/analytics/react";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
-import { io } from "socket.io-client";
 import * as XLSX from "xlsx";
 import "./App.css";
 import { Button } from "./components/common/Button/Button";
@@ -80,19 +79,6 @@ interface DBEvent {
   updated_at: string;
 }
 
-interface AttendanceUpdatePayload {
-  operation: "INSERT" | "UPDATE";
-  record: {
-    id: number;
-    student_id: string;
-    event_id: number;
-    status: string;
-    check_in_time: string;
-    created_at: string;
-    updated_at: string;
-  };
-}
-
 function AppContent() {
   const { showToast } = useToast();
   const [selectedTable, setSelectedTable] = useState("attendance");
@@ -115,10 +101,8 @@ function AppContent() {
   const [selectedStudentForMetrics, setSelectedStudentForMetrics] =
     useState<StudentRecord | null>(null);
   const [events, setEvents] = useState<DBEvent[]>([]);
-
   const [attendanceData, setAttendanceData] = useState<AttendanceRecord[]>([]);
   const [students, setStudents] = useState<StudentRecord[]>([]);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<{
     key: string;
@@ -181,52 +165,6 @@ function AppContent() {
     } else {
       setAttendanceData([]);
     }
-  }, [selectedEvent]);
-
-  // Setup Socket.IO connection for real-time attendance updates
-  useEffect(() => {
-    const socket = io(config.SOCKET_URL, {
-      transports: ["websocket", "polling"],
-      path: "/socket.io",
-    });
-
-    socket.on("connect", () => {
-      console.log("Connected to Socket.IO server");
-    });
-
-    socket.on("connect_error", (error) => {
-      console.error("Socket.IO connection error:", error);
-    });
-
-    socket.on("attendanceUpdate", (payload: AttendanceUpdatePayload) => {
-      console.log("Received attendance update:", payload);
-
-      if (
-        selectedEvent &&
-        payload.record.event_id === parseInt(selectedEvent.id)
-      ) {
-        // Update attendance data if it matches the current event
-        setAttendanceData((prevData) => {
-          const newData = [...prevData];
-          const index = newData.findIndex(
-            (item) => item.studentId === payload.record.student_id
-          );
-
-          if (index !== -1) {
-            newData[index] = {
-              ...newData[index],
-              status: payload.record.status,
-            };
-          }
-
-          return newData;
-        });
-      }
-    });
-
-    return () => {
-      socket.disconnect();
-    };
   }, [selectedEvent]);
 
   const handleTableAction = (action: string, row: TableRecord) => {
@@ -465,8 +403,8 @@ function AppContent() {
   };
 
   const attendanceColumns = [
-    { key: "studentId", label: "ID", width: "7" },
-    { key: "name", label: "NAME", width: "24" },
+    { key: "studentId", label: "ID", width: "0" },
+    { key: "name", label: "NAME", width: "0" },
     { key: "course", label: "COURSE", width: "0" },
     { key: "year", label: "YEAR", width: "0" },
     { key: "section", label: "SECTION", width: "0" },
@@ -474,12 +412,12 @@ function AppContent() {
   ];
 
   const studentColumns = [
-    { key: "studentId", label: "ID", width: "20" },
-    { key: "rfid", label: "RFID", width: "20" },
-    { key: "name", label: "NAME", width: "100" },
-    { key: "course", label: "COURSE", width: "20" },
-    { key: "year", label: "YEAR", width: "10" },
-    { key: "section", label: "SECTION", width: "10" },
+    { key: "studentId", label: "ID", width: "0" },
+    { key: "rfid", label: "RFID", width: "0" },
+    { key: "name", label: "NAME", width: "0" },
+    { key: "course", label: "COURSE", width: "0" },
+    { key: "year", label: "YEAR", width: "0" },
+    { key: "section", label: "SECTION", width: "0" },
   ];
 
   const courseOptions = [
@@ -603,63 +541,6 @@ function AppContent() {
     showToast(`${filterName} filter set to ${filterValue}`, "info");
   };
 
-  // Handler for RFID input keydown
-  const handleRfidInputKeyDown = async (
-    e: React.KeyboardEvent<HTMLInputElement>
-  ) => {
-    if (e.key === "Enter") {
-      const input = e.currentTarget;
-      const rfid = input.value;
-      console.log("RFID scanned:", rfid);
-      console.log(input);
-
-      if (!selectedEvent) {
-        showToast("Please select an event first", "error");
-        return;
-      }
-
-      try {
-        const response = await axios.put(
-          `${config.API_BASE_URL}/attendance/rfid/${rfid}/${selectedEvent.id}`
-        );
-
-        const { student } = response.data;
-        showToast(`${student.name} marked as Present`, "success");
-
-        // Update local attendance data
-        setAttendanceData((prevData) => {
-          const newData = [...prevData];
-          const index = newData.findIndex(
-            (item) => item.studentId === student.studentId
-          );
-
-          if (index !== -1) {
-            newData[index] = {
-              ...newData[index],
-              status: "Present",
-            };
-          }
-
-          return newData;
-        });
-      } catch (error: unknown) {
-        console.error("Error updating attendance:", error);
-        if (axios.isAxiosError(error)) {
-          showToast(
-            error.response?.data?.message || "Failed to update attendance",
-            "error"
-          );
-        } else {
-          showToast("Failed to update attendance", "error");
-        }
-      } finally {
-        console.log(input.value);
-        // Clear the input value using the stored reference
-        input.value = "";
-      }
-    }
-  };
-
   return (
     <div className="app bg-background-light h-[100vh] pb-5">
       <Analytics />
@@ -683,45 +564,57 @@ function AppContent() {
         </div>
 
         {/* Menu bar */}
-        <div className="flex lg:flex-row flex-col items-center gap-3 w-full lg:w-[60rem]">
+        <div className="flex lg:flex-row flex-col gap-3 w-full lg:w-[60rem]">
           {/* Date and Event Group */}
-          <div className="flex flex-row gap-3 w-full lg:w-auto">
+          <div className="flex flex-row gap-3">
             <Button
               onClick={handleDownload}
               icon={<SaveAltIcon sx={{ fontSize: "1rem" }} />}
               variant="primary"
               title="Export Table Data"
+              className="hidden sm:block"
             />
             {selectedTable === "attendance" ? (
-              <>
-                <Button
-                  icon={<HowToRegIcon sx={{ fontSize: "1rem" }} />}
-                  label="RFID Check-In"
-                  variant="primary"
-                  onClick={() => setIsRfidModalOpen(true)}
-                />
-                <DatePicker
-                  placeholder="Date"
-                  value={selectedDate}
-                  onChange={handleDateChange}
-                />
-                <EventSelector
-                  className="w-40"
-                  value={selectedEvent}
-                  onChange={handleEventChange}
-                  placeholder="Select event"
-                  events={events.map((event) => ({
-                    id: event.id.toString(),
-                    name: event.title,
-                    date: event.event_date,
-                    location: event.location,
-                    description: event.description,
-                  }))}
-                  onAddEvent={handleAddEvent}
-                  onEditEvent={handleEditEvent}
-                  onDeleteEvent={handleDeleteEvent}
-                />
-              </>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex flex-row gap-3">
+                  <Button
+                    onClick={handleDownload}
+                    icon={<SaveAltIcon sx={{ fontSize: "1rem" }} />}
+                    variant="primary"
+                    title="Export Table Data"
+                    className="sm:hidden"
+                  />
+                  <Button
+                    icon={<HowToRegIcon sx={{ fontSize: "1rem" }} />}
+                    label="RFID Check-In"
+                    variant="primary"
+                    onClick={() => setIsRfidModalOpen(true)}
+                  />
+                </div>
+                <div className="flex flex-row gap-3">
+                  <DatePicker
+                    placeholder="Date"
+                    value={selectedDate}
+                    onChange={handleDateChange}
+                  />
+                  <EventSelector
+                    className="w-40"
+                    value={selectedEvent}
+                    onChange={handleEventChange}
+                    placeholder="Select event"
+                    events={events.map((event) => ({
+                      id: event.id.toString(),
+                      name: event.title,
+                      date: event.event_date,
+                      location: event.location,
+                      description: event.description,
+                    }))}
+                    onAddEvent={handleAddEvent}
+                    onEditEvent={handleEditEvent}
+                    onDeleteEvent={handleDeleteEvent}
+                  />
+                </div>
+              </div>
             ) : (
               <Button
                 onClick={handleAddStudent}
@@ -734,24 +627,27 @@ function AppContent() {
           </div>
           <div className="hidden lg:block border-r h-8 border-border-light mx-1 text-xs"></div>
           {/* Filters Section */}
-          <div className="flex flex-row items-center gap-3 w-full lg:w-auto text-xs">
+          <div className="flex flex-row items-center gap-3 w-full text-xs">
             <DropdownSelector
               placeholder="Course"
               options={courseOptions}
               value={selectedFilters.course}
               onChange={(value) => handleFilterChange("course", value)}
+              className={`max-w-32`}
             />
             <DropdownSelector
               placeholder="Year"
               options={yearOptions}
               value={selectedFilters.year}
               onChange={(value) => handleFilterChange("year", value)}
+              className={`max-w-32`}
             />
             <DropdownSelector
               placeholder="Section"
               options={sectionOptions}
               value={selectedFilters.section}
               onChange={(value) => handleFilterChange("section", value)}
+              className={`max-w-32`}
             />
           </div>
         </div>
@@ -800,12 +696,7 @@ function AppContent() {
             Please tap your RFID card on the RFID reader to record attendance
             for this event.
           </p>
-          <input
-            type="text"
-            className="sr-only"
-            autoFocus
-            onKeyDown={handleRfidInputKeyDown}
-          />
+          <input type="text" className="sr-only" autoFocus />
           <Button
             label="Cancel"
             className="min-w-full mt-12 py-2 !text-sm"

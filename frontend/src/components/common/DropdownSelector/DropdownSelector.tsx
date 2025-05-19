@@ -59,7 +59,7 @@ export const DropdownSelector = ({
     <div className="relative text-xs h-fit" ref={dropdownRef}>
       {name && <input type="hidden" name={name} value={internalValue || ""} />}
       <div
-        className={`w-32 flex flex-row h-fit items-center border border-border-dark px-3 py-1 gap-2 rounded-md focus-within:border-border-focus focus-within:ring-2 focus-within:ring-zinc-200 cursor-pointer text-xs ${className}`}
+        className={`w-full flex flex-row h-fit items-center border border-border-dark px-3 py-1 gap-2 rounded-md focus-within:border-border-focus focus-within:ring-2 focus-within:ring-zinc-200 cursor-pointer text-xs ${className}`}
         onClick={() => setIsOpen(!isOpen)}
       >
         {icon && <span className="text-textbox-placeholder">{icon}</span>}

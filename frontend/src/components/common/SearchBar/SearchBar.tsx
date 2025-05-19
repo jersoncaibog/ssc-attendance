@@ -15,8 +15,8 @@ export const SearchBar = ({ onSearch }: SearchBarProps) => {
   };
 
   return (
-    <div className={`relative mr-auto`}>
-      <div className="flex flex-row w-60 items-center border border-border-dark px-3 py-1.5 gap-2 rounded-md focus-within:border-border-focus focus-within:ring-2 focus-within:ring-zinc-200 bg-background-light">
+    <div className={`relative ml-auto mr-3 sm:ml-0 sm:mr-auto`}>
+      <div className="flex flex-row w-36 sm:w-60 items-center border border-border-dark px-3 py-1.5 gap-2 rounded-md focus-within:border-border-focus focus-within:ring-2 focus-within:ring-zinc-200 bg-background-light">
         <span className="text-textbox-placeholder text-xs">
           <SearchIcon sx={{ fontSize: "1rem" }} />
         </span>
